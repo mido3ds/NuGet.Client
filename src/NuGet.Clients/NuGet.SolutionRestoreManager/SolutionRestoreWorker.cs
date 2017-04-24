@@ -62,6 +62,8 @@ namespace NuGet.SolutionRestoreManager
 
         public bool IsBusy => !_activeRestoreTask.IsCompleted;
 
+        public JoinableTaskFactory JoinableTaskFactory => _joinableFactory;
+
         [ImportingConstructor]
         public SolutionRestoreWorker(
             [Import(typeof(SVsServiceProvider))]

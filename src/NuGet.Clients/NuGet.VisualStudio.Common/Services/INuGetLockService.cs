@@ -33,5 +33,7 @@ namespace NuGet.VisualStudio
         /// <param name="token">Cancellation token</param>
         /// <returns>Awaitable Task with T</returns>
         Task<T> ExecuteNuGetOperationAsync<T>(Func<Task<T>> action, CancellationToken token);
+
+        Task WaitAndReleaseAsync(CancellationToken token);
     }
 }

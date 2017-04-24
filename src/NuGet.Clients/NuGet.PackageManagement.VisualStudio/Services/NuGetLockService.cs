@@ -22,6 +22,28 @@ namespace NuGet.PackageManagement.VisualStudio
 
         public bool IsLockHeld => _semaphore.CurrentCount == 0;
 
+        public async Task WaitAndReleaseAsync(CancellationToken token)
+        {
+            if (_lockCount.Value == 0)
+            {
+                _lockCount.Value++;
+                try
+                {
+                    await _semaphore.WaitAsync(token);
+                }
+                finally
+                {
+                    try
+                    {
+                        _semaphore.Release();
+                    }
+                    catch (ObjectDisposedException) { }
+
+                    _lockCount.Value--;
+                }
+            }
+        }
+
         public async Task<T> ExecuteNuGetOperationAsync<T>(Func<Task<T>> action, CancellationToken token)
         {
             if (_lockCount.Value == 0)
