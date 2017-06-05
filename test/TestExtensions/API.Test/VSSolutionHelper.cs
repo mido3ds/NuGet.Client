@@ -6,18 +6,17 @@ using System.Threading.Tasks;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
-using NuGet.VisualStudio;
 using Task = System.Threading.Tasks.Task;
 
 namespace API.Test
 {
     public static class VSSolutionHelper
     {
-        public static async Task<Solution2> GetSolution2Async()
+        internal static async Task<Solution2> GetDTESolutionAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             var dte2 = (DTE2)dte;
             var solution2 = dte2.Solution as Solution2;
 
@@ -46,7 +45,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
             var solutionFullName = solution2.FullName;
             return solutionFullName;
         }
@@ -66,7 +65,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
             solution2.Create(solutionDirectory, name);
 
             var solutionPath = Path.Combine(solutionDirectory, name);
@@ -129,7 +128,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
             return await IsSolutionAvailableAsync(solution2);
         }
 
@@ -151,7 +150,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
             var isSolutionAvailable = await IsSolutionAvailableAsync(solution2);
             if (isSolutionAvailable)
             {
@@ -173,7 +172,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
             solution2.Open(solutionFile);
         }
 
@@ -191,7 +190,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
             solution2.SaveAs(solutionFile);
         }
 
@@ -199,7 +198,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await VSSolutionHelper.GetSolution2Async();
+            var solution2 = await VSSolutionHelper.GetDTESolutionAsync();
             var isSolutionAvailable = await VSSolutionHelper.IsSolutionAvailableAsync(solution2);
 
             if (!isSolutionAvailable)
@@ -340,7 +339,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
 
             
 
@@ -380,7 +379,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var solution2 = await GetSolution2Async();
+            var solution2 = await GetDTESolutionAsync();
 
             var solutionFolderProject = await GetSolutionFolderProjectAsync(solution2, folderPath);
             solutionFolderProject.Name = newName;

@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
-using NuGet.VisualStudio;
 using Task = System.Threading.Tasks.Task;
 
 namespace API.Test
 {
+
     public static class VSHelper
     {
         public static string GetVSVersion()
@@ -34,7 +34,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             PSWindow = dte.ActiveWindow;
         }
 
@@ -63,7 +63,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             var version = dte.Version;
 
             return version;
@@ -83,7 +83,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             var dte2 = (DTE2)dte;
             var buildPane = dte2.ToolWindows.OutputWindow.OutputWindowPanes.Item(BuildOutputPaneName);
             var doc = buildPane.TextDocument;
@@ -106,7 +106,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             dte.ItemOperations.NewFile("General\\Text File");
             dte.ActiveDocument.Object("TextDocument");
         }
@@ -116,7 +116,7 @@ namespace API.Test
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             dte.ExecuteCommand("View.ErrorList", " ");
 
             Window errorListWindow = null;

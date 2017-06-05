@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
-using NuGet.VisualStudio;
 using Task = System.Threading.Tasks.Task;
 
 namespace API.Test
@@ -55,7 +54,7 @@ namespace API.Test
 
             string projectTemplateFilePath = null;
 
-            var dte = ServiceLocator.GetInstance<DTE>();
+            var dte = ServiceLocator.GetDTE();
             var dte2 = (DTE2)dte;
             var solution2 = dte2.Solution as Solution2;
             Project solutionFolderProject = null;
