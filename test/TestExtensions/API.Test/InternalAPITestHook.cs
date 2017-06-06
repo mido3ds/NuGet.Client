@@ -1,9 +1,8 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using NuGet.PackageManagement;
 using NuGet.VisualStudio;
 using Task = System.Threading.Tasks.Task;
@@ -163,7 +162,6 @@ namespace API.Test
         public static void ProjectCacheEventApi_InstallPackage(string id, string version)
         {
             var dte = ServiceLocator.GetDTE();
-            var vsSolutionManager = ServiceLocator.GetComponent<ISolutionManager>();
             var installerServices = ServiceLocator.GetComponent<IVsPackageInstaller>();
             foreach (EnvDTE.Project project in dte.Solution.Projects)
             {
@@ -175,12 +173,6 @@ namespace API.Test
         {
             var vsSolutionManager = ServiceLocator.GetComponent<ISolutionManager>();
             vsSolutionManager.AfterNuGetCacheUpdated -= _cacheUpdateEventHandler.Invoke;
-        }
-
-        public static async Task<IVsProjectJsonToPackageReferenceMigrateResult> MigrateJsonProject(string projectName)
-        {
-            var migrator = ServiceLocator.GetComponent<IVsProjectJsonToPackageReferenceMigrator>();
-            return (IVsProjectJsonToPackageReferenceMigrateResult)await migrator.MigrateProjectJsonToPackageReferenceAsync(projectName);
         }
     }
 }

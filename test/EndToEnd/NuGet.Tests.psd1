@@ -64,7 +64,9 @@ FunctionsToExport = @()
 CmdletsToExport = @(
     'Run-Test',
     'Enable-LightweightSolutionLoad',
-    'Get-InstalledPackages')
+    'Get-InstalledPackage',
+    'Test-InstalledPackage',
+    'Test-Project')
 
 # Variables to export from this module
 VariablesToExport = ''

@@ -1,10 +1,12 @@
-﻿using System;
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EnvDTE;
-using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
 
@@ -12,13 +14,13 @@ namespace API.Test
 {
     public static class VSSolutionHelper
     {
-        internal static async Task<Solution2> GetDTESolutionAsync()
+        internal static async Task<EnvDTE80.Solution2> GetDTESolutionAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             var dte = ServiceLocator.GetDTE();
-            var dte2 = (DTE2)dte;
-            var solution2 = dte2.Solution as Solution2;
+            var dte2 = (EnvDTE80.DTE2)dte;
+            var solution2 = dte2.Solution as EnvDTE80.Solution2;
 
             return solution2;
         }
@@ -132,7 +134,7 @@ namespace API.Test
             return await IsSolutionAvailableAsync(solution2);
         }
 
-        public static async Task<bool> IsSolutionAvailableAsync(Solution2 solution2)
+        public static async Task<bool> IsSolutionAvailableAsync(EnvDTE80.Solution2 solution2)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             return solution2 != null && solution2.IsOpen;
@@ -194,7 +196,7 @@ namespace API.Test
             solution2.SaveAs(solutionFile);
         }
 
-        public static async Task<SolutionBuild> GetSolutionBuildAsync()
+        public static async Task<EnvDTE.SolutionBuild> GetSolutionBuildAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -243,7 +245,7 @@ namespace API.Test
             solutionBuild.Clean(WaitForCleanToFinish: true);
         }
 
-        public static async Task<Project> GetSolutionFolderProjectAsync(Solution2 solution2, string solutionFolderName)
+        public static async Task<EnvDTE.Project> GetSolutionFolderProjectAsync(EnvDTE80.Solution2 solution2, string solutionFolderName)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -255,7 +257,7 @@ namespace API.Test
                 throw new ArgumentException("No corresponding solution folder exists", nameof(solutionFolderName));
             }
 
-            var solutionFolder = solutionFolderProject.Object as SolutionFolder;
+            var solutionFolder = solutionFolderProject.Object as EnvDTE80.SolutionFolder;
             if (solutionFolder == null)
             {
                 throw new ArgumentException("Not a valid solution folder", nameof(solutionFolderName));
@@ -264,7 +266,7 @@ namespace API.Test
             return solutionFolderProject;
         }
 
-        private static async Task<Project> GetSolutionFolderProjectAsync(
+        private static async Task<EnvDTE.Project> GetSolutionFolderProjectAsync(
             IEnumerable projectItems,
             string[] solutionFolderParts,
             int level)
@@ -287,16 +289,16 @@ namespace API.Test
             }
 
             var solutionFolderName = solutionFolderParts[level];
-            Project solutionFolderProject = null;
+            EnvDTE.Project solutionFolderProject = null;
 
             foreach (var item in projectItems)
             {
                 // Item could be a project or a projectItem
-                Project project = item as Project;
+                var project = item as EnvDTE.Project;
 
                 if (project == null)
                 {
-                    var projectItem = item as ProjectItem;
+                    var projectItem = item as EnvDTE.ProjectItem;
                     if (projectItem != null)
                     {
                         project = projectItem.SubProject;
@@ -359,7 +361,7 @@ namespace API.Test
                 var solutionFolderName = folderPath.Substring(newSolutionFolderIndex + 1);
 
                 var parentProject = await GetSolutionFolderProjectAsync(solution2, parentName);
-                var parentSolutionFolder = (SolutionFolder)parentProject.Object;
+                var parentSolutionFolder = (EnvDTE80.SolutionFolder)parentProject.Object;
                 parentSolutionFolder.AddSolutionFolder(solutionFolderName);
             }
         }
@@ -383,6 +385,29 @@ namespace API.Test
 
             var solutionFolderProject = await GetSolutionFolderProjectAsync(solution2, folderPath);
             solutionFolderProject.Name = newName;
+        }
+
+        public static async Task<EnvDTE.Project> GetProjectAsync(EnvDTE80.Solution2 solution2, string projectName)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            return solution2
+                .Projects
+                .Cast<EnvDTE.Project>()
+                .FirstOrDefault(project => project.Name.Equals(projectName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static async Task<EnvDTE.Project> GetProjectAsync(
+            EnvDTE.Project solutionFolderProject,
+            string projectName)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var projectItem = solutionFolderProject.ProjectItems
+                .Cast<EnvDTE.ProjectItem>()
+                .FirstOrDefault(project => project.Name.Equals(projectName, StringComparison.OrdinalIgnoreCase));
+
+            return projectItem?.Object as EnvDTE.Project;
         }
     }
 }

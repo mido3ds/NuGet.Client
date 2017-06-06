@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using Microsoft;
@@ -35,12 +35,16 @@ namespace API.Test
 
             var instance = Package.GetGlobalService(typeof(TService)) as TInterface;
             Assumes.Present(instance);
+
             return instance;
         }
 
         public static TService GetComponent<TService>() where TService : class
         {
-            return ComponentModel.GetService<TService>();
+            var service = ComponentModel.GetService<TService>();
+            Assumes.Present(service);
+
+            return service;
         }
     }
 }

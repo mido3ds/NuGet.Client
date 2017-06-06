@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Management.Automation;
@@ -6,6 +6,7 @@ using Microsoft;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Task = System.Threading.Tasks.Task;
 
 namespace API.Test.Cmdlets
 {
@@ -21,27 +22,46 @@ namespace API.Test.Cmdlets
         {
             ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-                var vsSolution = ServiceLocator.GetService<SVsSolution, IVsSolution>();
-                Assumes.Present(vsSolution);
-
-                ErrorHandler.ThrowOnFailure(vsSolution.SetProperty(
-                    (int)__VSPROPID7.VSPROPID_DeferredLoadOption,
-                    __VSSOLUTIONDEFERREDLOADOPTION.DLO_DEFERRED));
+                await EnableDeferredLoadAsync();
 
                 if (_reload)
                 {
-                    var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
-                    Assumes.Present(dteSolution);
+                    await ReloadSolutionAsync();
 
-                    var solutionFullName = dteSolution.FullName;
-
-                    dteSolution.Close(SaveFirst: true);
-
-                    dteSolution.Open(solutionFullName);
+                    VSSolutionHelper.WaitForSolutionLoad();
                 }
             });
+        }
+
+        private static async Task EnableDeferredLoadAsync()
+        {
+#if VS14
+            await Task.Yield();
+            throw new System.NotSupportedException("Operation not supported for VS14");
+#else
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var vsSolution = ServiceLocator.GetService<SVsSolution, IVsSolution>();
+            Assumes.Present(vsSolution);
+
+            ErrorHandler.ThrowOnFailure(vsSolution.SetProperty(
+                (int)__VSPROPID7.VSPROPID_DeferredLoadOption,
+                __VSSOLUTIONDEFERREDLOADOPTION.DLO_DEFERRED));
+#endif
+        }
+
+        private static async Task ReloadSolutionAsync()
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
+            Assumes.Present(dteSolution);
+
+            var solutionFullName = dteSolution.FullName;
+
+            dteSolution.Close(SaveFirst: true);
+
+            dteSolution.Open(solutionFullName);
         }
     }
 }
