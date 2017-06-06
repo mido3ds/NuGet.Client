@@ -86,14 +86,14 @@ namespace NuGet.Build.Tasks
             return sources.Select(e => new PackageSource(UriUtility.GetAbsolutePathFromFile(projectFullPath, e))).ToList();
         }
 
-        public static string GetPackagesPath(string projectFullPath, ISettings settings, string packagePath)
+        public static string GetPackagesPath(string RelativePathRoot, ISettings settings, string packagePath)
         {
             if (string.IsNullOrEmpty(packagePath))
             {
                 return SettingsUtility.GetGlobalPackagesFolder(settings);
             }
 
-            return UriUtility.GetAbsolutePathFromFile(projectFullPath, packagePath);
+            return UriUtility.GetAbsolutePathFromFile(RelativePathRoot, packagePath);
         }
 
 

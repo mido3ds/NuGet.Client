@@ -80,6 +80,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="NuGet.Build.Tasks.GetRestoreProjectFrameworks" AssemblyFile="$(RestoreTaskAssemblyFile)" />
   <UsingTask TaskName="NuGet.Build.Tasks.GetRestoreSolutionProjectsTask" AssemblyFile="$(RestoreTaskAssemblyFile)" />
   <UsingTask TaskName="NuGet.Build.Tasks.GetRestoreSettingsTask" AssemblyFile="$(RestoreTaskAssemblyFile)" />
+  <UsingTask TaskName="NuGet.Build.Tasks.ProcessGlobalPropertiesTask" AssemblyFile="$(RestoreTaskAssemblyFile)" />
 
 
   <!--
@@ -101,10 +102,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Call restore -->
     <RestoreTask
       RestoreGraphItems="@(_RestoreGraphEntryFiltered)"
-      RestoreSources="$(RestoreSources)"
-      RestorePackagesPath="$(RestorePackagesPath)"
       RestoreDisableParallel="$(RestoreDisableParallel)"
-      RestoreConfigFile="$(RestoreConfigFile)"
       RestoreNoCache="$(RestoreNoCache)"
       RestoreIgnoreFailedSources="$(RestoreIgnoreFailedSources)"
       RestoreRecursive="$(RestoreRecursive)"
@@ -424,8 +422,26 @@ Copyright (c) .NET Foundation. All rights reserved.
     _GetRestoreSettings
     ============================================================
   -->
-  <Target Name="_GetRestoreSettings" DependsOnTargets="_GetRestoreProjectStyle" Returns="$(_OutputSources);$(_OutputPackagesPath);$(_OutputFallbackFolders);$(_OutputConfigFilePaths)">
+  <Target Name="_GetRestoreSettings" DependsOnTargets="_GetRestoreProjectStyle;_ProcessGlobalProperties" Returns="$(_OutputSources);$(_OutputPackagesPath);$(_OutputFallbackFolders);$(_OutputConfigFilePaths)">
     <!-- For transitive project styles, we rely on evaluating all the settings and including them in the dg spec to faciliate no-op restore-->
+    <!--<MSBuild
+      Projects=""
+      Targets="_ProcessGlobalProperties"
+      ContinueOnError="$(RestoreContinueOnError)"
+      Properties="$(RestorePackagesPath);
+                  $(RestoreFallbackFolders);
+                  $(RestoreSources);">
+      <Output
+        TaskParameter="IsRestorePackagesPathGlobal"
+        PropertyName="_IsRestorePackagesPathGlobal" />
+      <Output
+        TaskParameter="IsRestoreSourcesGlobal"
+        PropertyName="_IsRestoreSourcesGlobal" />
+      <Output
+        TaskParameter="IsRestoreFallbackFoldersGlobal"
+        PropertyName="_IsRestoreFallbackFoldersGlobal" />
+    </MSBuild>-->
+
     <GetRestoreSettingsTask Condition=" '$(RestoreProjectStyle)' == 'PackageReference' OR '$(RestoreProjectStyle)' == 'ProjectJson' "
      ProjectUniqueName="$(MSBuildProjectFullPath)"
      RestoreSources="$(RestoreSources)"
@@ -435,6 +451,9 @@ Copyright (c) .NET Foundation. All rights reserved.
      RestoreSolutionDirectory="$(RestoreSolutionDirectory)"
      RestoreAdditionalProjectFallbackFolders="$(RestoreAdditionalProjectFallbackFolders)"
      RestoreAdditionalProjectSources="$(RestoreAdditionalProjectSources)"
+     IsRestorePackagesPathGlobal="$(_IsRestorePackagesPathGlobal)"
+     IsRestoreSourcesGlobal="$(_IsRestoreSourcesGlobal)"
+     IsRestoreFallbackFoldersGlobal="$(_IsRestoreFallbackFoldersGlobal)"
      >
       <Output
         TaskParameter="OutputSources"
@@ -449,6 +468,29 @@ Copyright (c) .NET Foundation. All rights reserved.
         TaskParameter="OutputConfigFilePaths"
         PropertyName="_OutputConfigFilePaths" />
     </GetRestoreSettingsTask>
+  </Target>
+
+  <!--
+  _ProcessGlobalProperties
+  -->
+  <Target Name="_ProcessGlobalProperties" Returns="$(_IsRestorePackagesPathGlobal);$(_IsRestoreSourcesGlobal);$(_IsRestoreFallbackFoldersGlobal)">
+
+    <ProcessGlobalPropertiesTask
+     RestoreSources="$(RestoreSources)"
+     RestorePackagesPath="$(RestorePackagesPath)"
+     RestoreFallbackFolders="$(RestoreFallbackFolders)"
+     >
+      <Output
+        TaskParameter="IsRestorePackagesPathGlobal"
+        PropertyName="_IsRestorePackagesPathGlobal" />
+      <Output
+        TaskParameter="IsRestoreSourcesGlobal"
+        PropertyName="_IsRestoreSourcesGlobal" />
+      <Output
+        TaskParameter="IsRestoreFallbackFoldersGlobal"
+        PropertyName="_IsRestoreFallbackFoldersGlobal" />
+    </ProcessGlobalPropertiesTask>
+
   </Target>
 
   <!--

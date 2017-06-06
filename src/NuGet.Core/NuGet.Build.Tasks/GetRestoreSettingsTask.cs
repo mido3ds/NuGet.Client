@@ -26,9 +26,15 @@ namespace NuGet.Build.Tasks
 
         public string[] RestoreSources { get; set; }
 
+        public bool IsRestoreSourcesGlobal { get; set; }
+
         public string RestorePackagesPath { get; set; }
 
+        public bool IsRestorePackagesPathGlobal { get; set; }
+
         public string[] RestoreFallbackFolders { get; set; }
+
+        public bool IsRestoreFallbackFoldersGlobal { get; set; }
 
         public string RestoreConfigFile { get; set; }
 
@@ -94,9 +100,11 @@ namespace NuGet.Build.Tasks
 
             try
             {
+                string callingDirectory = ProjectUniqueName;
+
                 var settings = RestoreSettingsUtils.ReadSettings(RestoreSolutionDirectory, Path.GetDirectoryName(ProjectUniqueName), RestoreConfigFile, _machineWideSettings);
 
-                OutputPackagesPath = RestoreSettingsUtils.GetPackagesPath(ProjectUniqueName, settings, RestorePackagesPath);
+                OutputPackagesPath = RestoreSettingsUtils.GetPackagesPath(IsRestorePackagesPathGlobal ? callingDirectory : ProjectUniqueName, settings, RestorePackagesPath);
 
                 if (RestoreSources == null)
                 {
@@ -117,11 +125,11 @@ namespace NuGet.Build.Tasks
                 else
                 {
                     // Relative -> Absolute paths
-                    OutputSources = RestoreSources.Select(e => UriUtility.GetAbsolutePathFromFile(ProjectUniqueName, e)).ToArray();
+                    OutputSources = RestoreSources.Select(e => UriUtility.GetAbsolutePathFromFile(IsRestoreSourcesGlobal ? callingDirectory : ProjectUniqueName, e)).ToArray();
                 }
 
                 // Append additional sources
-                OutputSources = AppendItems(OutputSources, RestoreAdditionalProjectSources)
+                OutputSources = AppendItems(OutputSources, RestoreAdditionalProjectSources, IsRestoreSourcesGlobal ? callingDirectory : ProjectUniqueName)
                     .OrderBy(s => s, new SourceTypeComparer())
                     .ToArray();
 
@@ -142,11 +150,11 @@ namespace NuGet.Build.Tasks
                 else
                 {
                     // Relative -> Absolute paths
-                    OutputFallbackFolders = RestoreFallbackFolders.Select(e => UriUtility.GetAbsolutePathFromFile(ProjectUniqueName, e)).ToArray();
+                    OutputFallbackFolders = RestoreFallbackFolders.Select(e => UriUtility.GetAbsolutePathFromFile(IsRestoreFallbackFoldersGlobal ? callingDirectory : ProjectUniqueName, e)).ToArray();
                 }
 
                 // Append additional fallback folders
-                OutputFallbackFolders = AppendItems(OutputFallbackFolders, RestoreAdditionalProjectFallbackFolders);
+                OutputFallbackFolders = AppendItems(OutputFallbackFolders, RestoreAdditionalProjectFallbackFolders, IsRestoreFallbackFoldersGlobal ? callingDirectory : ProjectUniqueName);
 
                 OutputConfigFilePaths = SettingsUtility.GetConfigFilePaths(settings).ToArray();
             }
@@ -166,7 +174,7 @@ namespace NuGet.Build.Tasks
             return true;
         }
 
-        private string[] AppendItems(string[] current, string[] additional)
+        private static string[] AppendItems(string[] current, string[] additional, string relativeDirectoryPath)
         {
             if (additional == null || additional.Length == 0)
             {
@@ -174,7 +182,7 @@ namespace NuGet.Build.Tasks
                 return current;
             }
 
-            var additionalAbsolute = additional.Select(e => UriUtility.GetAbsolutePathFromFile(ProjectUniqueName, e));
+            var additionalAbsolute = additional.Select(e => UriUtility.GetAbsolutePathFromFile(relativeDirectoryPath, e));
 
             return current.Concat(additionalAbsolute).ToArray();
         }
