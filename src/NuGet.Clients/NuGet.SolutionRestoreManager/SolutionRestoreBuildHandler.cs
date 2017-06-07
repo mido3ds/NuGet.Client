@@ -118,44 +118,44 @@ namespace NuGet.SolutionRestoreManager
         public void UpdateSolution_QueryDelayBuildAction(uint dwAction, out Guid pActivityId, out IVsTask pDelayTask)
         {
             pActivityId = GuidList.guidNuGetSBMEvents;
-            pDelayTask = ThreadHelper.JoinableTaskFactory.RunAsyncAsVsTask(VsTaskRunContext.UIThreadBackgroundPriority, async (token) =>
-            {
-                // move to bg thread to continue with restore
-                await TaskScheduler.Default;
-
-                if ((dwAction & (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_CLEAN) != 0 &&
-                    (dwAction & (uint)VSSOLNBUILDUPDATEFLAGS3.SBF_FLAGS_UPTODATE_CHECK) == 0)
-                {
-                    // Clear the project.json restore cache on clean to ensure that the next build restores again
-                    SolutionRestoreWorker.Value.CleanCache();
-                }
-                else if((dwAction & (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD) != 0 &&
-                        (dwAction & (uint)VSSOLNBUILDUPDATEFLAGS3.SBF_FLAGS_UPTODATE_CHECK) == 0 && 
-                        ShouldRestoreOnBuild)
-                {
-                    // check if NuGet lock is already acquired by some other NuGet operation
-                    if (LockService.Value.IsLockHeld)
-                    {
-                        // wait until current NuGet operation is completed.
-                        await LockService.Value.WaitAndReleaseAsync(token);
-                    }
-
-                    // start a restore task
-                    var forceRestore = (dwAction & (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_FORCE_UPDATE) != 0;
-                    var restoreTask = SolutionRestoreWorker.Value.JoinableTaskFactory.RunAsync(() =>
-                        SolutionRestoreWorker.Value.ScheduleRestoreAsync(
-                            SolutionRestoreRequest.OnBuild(forceRestore),
-                            token));
-
-                    // wait until restore is done which will block build without blocking UI thread
-                    return await restoreTask;
-                }
-
-                return true;
-            });
+            pDelayTask = SolutionRestoreWorker.Value.JoinableTaskFactory.RunAsyncAsVsTask(
+                VsTaskRunContext.UIThreadBackgroundPriority, (token) => RestoreAsync(dwAction, token));
         }
 
         #endregion IVsUpdateSolutionEvents5
+
+        public async Task<bool> RestoreAsync(uint buildAction, CancellationToken token)
+        {
+            // move to bg thread to continue with restore
+            await TaskScheduler.Default;
+
+            if ((buildAction & (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_CLEAN) != 0 &&
+                (buildAction & (uint)VSSOLNBUILDUPDATEFLAGS3.SBF_FLAGS_UPTODATE_CHECK) == 0)
+            {
+                // Clear the project.json restore cache on clean to ensure that the next build restores again
+                SolutionRestoreWorker.Value.CleanCache();
+            }
+            else if ((buildAction & (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD) != 0 &&
+                    (buildAction & (uint)VSSOLNBUILDUPDATEFLAGS3.SBF_FLAGS_UPTODATE_CHECK) == 0 &&
+                    ShouldRestoreOnBuild)
+            {
+                // check if NuGet lock is already acquired by some other NuGet operation
+                // wait until current NuGet operation is completed.
+                await LockService.Value.WaitAndReleaseAsync(token);
+
+                // start a restore task
+                var forceRestore = (buildAction & (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_FORCE_UPDATE) != 0;
+                var restoreTask = SolutionRestoreWorker.Value.JoinableTaskFactory.RunAsync(() =>
+                    SolutionRestoreWorker.Value.ScheduleRestoreAsync(
+                        SolutionRestoreRequest.OnBuild(forceRestore),
+                        token));
+
+                // wait until restore is done which will block build without blocking UI thread
+                return await restoreTask;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Returns true if automatic package restore on build is enabled.

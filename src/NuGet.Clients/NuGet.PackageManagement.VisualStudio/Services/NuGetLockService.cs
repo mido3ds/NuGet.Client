@@ -24,7 +24,8 @@ namespace NuGet.PackageManagement.VisualStudio
 
         public async Task WaitAndReleaseAsync(CancellationToken token)
         {
-            if (_lockCount.Value == 0)
+            // if lock is held by some other thread then wait until it's released.
+            if (IsLockHeld && _lockCount.Value == 0)
             {
                 _lockCount.Value++;
                 try

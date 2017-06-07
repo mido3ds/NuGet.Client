@@ -27,7 +27,7 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Shell.Interop.15.3.DesignTime">
-      <HintPath>..\..\..\..\..\..\..\private bits\Svet_SBM_Event\ref\Microsoft.VisualStudio.Shell.Interop.15.3.DesignTime.dll</HintPath>
+      <HintPath>$(SolutionPackagesFolder)Microsoft.VisualStudio.Shell.Interop.15.3.DesignTime.15.0.26601\lib\Microsoft.VisualStudio.Shell.Interop.15.3.DesignTime.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
