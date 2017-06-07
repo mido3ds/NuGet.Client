@@ -24,52 +24,49 @@ function Test-UnitTestProjectLSL {
 
 function Test-PackagesConfigInstallPackageLSL {
 
-    $projectT = New-ClassLibrary TestProject
-    Enable-LightweightSolutionLoad -Reload
+    $projectT = New-ClassLibrary | Select-Object FullName, ProjectName
 
-    $projectT = Get-Project TestProject
+    Enable-LightweightSolutionLoad -Reload
 
     # Act
     $projectT | Install-Package NuGet.Versioning -Version 1.0.7
 
-    Assert-True -Value:($projectT | Test-InstalledPackage NuGet.Versioning) -Message:'Test package is not installed'
-    Assert-True -Value:($projectT | Test-Project -IsDeferred) -Message:'Test project should stay in deferred mode'
+    Assert-True ($projectT | Test-InstalledPackage NuGet.Versioning) -Message 'Test package is not installed'
+    Assert-True ($projectT | Test-Project -IsDeferred) -Message 'Test project should stay in deferred mode'
 }
 
 function Test-PackagesConfigUninstallPackageLSL {
 
-    $projectT = New-ClassLibrary TestProject
+    $projectT = New-ClassLibrary TestProject | Select-Object FullName, ProjectName
     $projectT | Install-Package NuGet.Versioning -Version 1.0.7
-    Enable-LightweightSolutionLoad -Reload
 
-    $projectT = Get-Project TestProject
+    Enable-LightweightSolutionLoad -Reload
 
     # Act
     $projectT | Uninstall-Package NuGet.Versioning -Version 1.0.7
 
-    Assert-True -Value:($projectT | Test-InstalledPackage NuGet.Versioning) -Message:'Test package is not installed'
-    Assert-True -Value:($projectT | Test-Project -IsDeferred) -Message:'Test project should stay in deferred mode'
+    Assert-True ($projectT | Test-InstalledPackage NuGet.Versioning) -Message 'Test package is not installed'
+    Assert-True ($projectT | Test-Project -IsDeferred) -Message 'Test project should stay in deferred mode'
 }
 
 function Test-PackageReferenceInstallPackageLSL {
 
-    $projectT = New-Project PackageReferenceClassLibrary TestProject
-    Enable-LightweightSolutionLoad -Reload
+    $projectT = New-Project PackageReferenceClassLibrary | Select-Object FullName, ProjectName
 
-    $projectT = Get-Project TestProject
-    Assert-NotNull $projectT
+    Enable-LightweightSolutionLoad -Reload
 
     # Act
     $projectT | Install-Package NuGet.Versioning -Version 1.0.7
 
-    Assert-True -Value:($projectT | Test-InstalledPackage NuGet.Versioning) -Message:'Test package is not installed'
-    Assert-True -Value:($projectT | Test-Project -IsDeferred) -Message:'Test project should stay in deferred mode'
+    Assert-True ($projectT | Test-InstalledPackage NuGet.Versioning) -Message 'Test package is not installed'
+    Assert-True ($projectT | Test-Project -IsDeferred) -Message 'Test project should stay in deferred mode'
 }
 
 function Test-PackageReferenceUninstallPackageLSL {
 
-    $projectT = New-Project PackageReferenceClassLibrary TestProject
+    $projectT = New-Project PackageReferenceClassLibrary | Select-Object FullName, ProjectName
     $projectT | Install-Package NuGet.Versioning -Version 1.0.7
+
     Enable-LightweightSolutionLoad -Reload
 
     $projectT = Get-Project TestProject
@@ -77,6 +74,35 @@ function Test-PackageReferenceUninstallPackageLSL {
     # Act
     $projectT | Uninstall-Package NuGet.Versioning -Version 1.0.7
 
-    Assert-True -Value:($projectT | Test-InstalledPackage NuGet.Versioning) -Message:'Test package is not installed'
-    Assert-True -Value:($projectT | Test-Project -IsDeferred) -Message:'Test project should stay in deferred mode'
+    Assert-True ($projectT | Test-InstalledPackage NuGet.Versioning) -Message 'Test package is not installed'
+    Assert-True ($projectT | Test-Project -IsDeferred) -Message 'Test project should stay in deferred mode'
+}
+
+function Test-ProjectJsonInstallPackageLSL {
+
+    $projectT = New-Project BuildIntegratedClassLibrary | Select-Object FullName, ProjectName
+
+    Enable-LightweightSolutionLoad -Reload
+
+    # Act
+    $projectT | Install-Package NuGet.Versioning -Version 1.0.7
+
+    Assert-True ($projectT | Test-InstalledPackage NuGet.Versioning) -Message 'Test package is not installed'
+    Assert-True ($projectT | Test-Project -IsDeferred) -Message 'Test project should stay in deferred mode'
+}
+
+function Test-ProjectJsonUninstallPackageLSL {
+
+    $projectT = New-Project BuildIntegratedClassLibrary | Select-Object FullName, ProjectName
+    $projectT | Install-Package NuGet.Versioning -Version 1.0.7
+
+    Enable-LightweightSolutionLoad -Reload
+
+    $projectT = Get-Project TestProject
+
+    # Act
+    $projectT | Uninstall-Package NuGet.Versioning -Version 1.0.7
+
+    Assert-True ($projectT | Test-InstalledPackage NuGet.Versioning) -Message 'Test package is not installed'
+    Assert-True ($projectT | Test-Project -IsDeferred) -Message 'Test project should stay in deferred mode'
 }

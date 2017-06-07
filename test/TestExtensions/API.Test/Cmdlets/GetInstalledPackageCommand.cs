@@ -1,11 +1,12 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
 using System.Management.Automation;
+using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Shell;
 using NuGet.VisualStudio;
+using Task = System.Threading.Tasks.Task;
 
 namespace API.Test.Cmdlets
 {
@@ -23,13 +24,13 @@ namespace API.Test.Cmdlets
 
     [Cmdlet(VerbsCommon.Get, "InstalledPackage")]
     [OutputType(typeof(PackageView))]
-    public sealed class GetInstalledPackageCommand : Cmdlet
+    public sealed class GetInstalledPackageCommand : TestExtensionCmdlet
     {
         [Parameter(Position = 0, ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
         public string ProjectName { get; set; }
 
-        protected override void ProcessRecord()
+        protected override async Task ProcessRecordAsync()
         {
             IEnumerable<IVsPackageMetadata> packages;
 
@@ -40,7 +41,7 @@ namespace API.Test.Cmdlets
             }
             else
             {
-                packages = GetInstalledPackagesForProject();
+                packages = await GetInstalledPackagesForProjectAsync();
             }
 
             foreach (var package in packages)
@@ -49,17 +50,14 @@ namespace API.Test.Cmdlets
             }
         }
 
-        private IEnumerable<IVsPackageMetadata> GetInstalledPackagesForProject()
+        private async Task<IEnumerable<IVsPackageMetadata>> GetInstalledPackagesForProjectAsync()
         {
-            return ThreadHelper.JoinableTaskFactory.Run(async () =>
-            {
-                var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
-                var project = await VSSolutionHelper.GetProjectAsync(dteSolution, ProjectName);
-                Assumes.Present(project);
+            var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
+            var project = await VSSolutionHelper.GetProjectAsync(dteSolution, ProjectName);
+            Assumes.Present(project);
 
-                var services = ServiceLocator.GetComponent<IVsPackageInstallerServices>();
-                return services.GetInstalledPackages(project);
-            });
+            var services = ServiceLocator.GetComponent<IVsPackageInstallerServices>();
+            return services.GetInstalledPackages(project);
         }
     }
 }

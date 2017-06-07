@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Management.Automation;
@@ -12,53 +12,45 @@ namespace API.Test.Cmdlets
 {
     [Cmdlet(VerbsDiagnostic.Test, "Project")]
     [OutputType(typeof(bool))]
-    public sealed class TestProjectCommand : Cmdlet
+    public sealed class TestProjectCommand : TestExtensionCmdlet
     {
         private bool _isDeferred;
 
         [Parameter(Mandatory = true, Position = 0, ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
-        public string ProjectName { get; set; }
+        public string FullName { get; set; }
 
         [Parameter]
         public SwitchParameter IsDeferred { get => _isDeferred; set => _isDeferred = value; }
 
-        protected override void ProcessRecord()
+        protected override async Task ProcessRecordAsync()
         {
-            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            var project = await VSSolutionHelper.FindProjectAsync(FullName);
+            if (project == null)
             {
-                var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
-                var project = await VSSolutionHelper.GetProjectAsync(dteSolution, ProjectName);
-                if (project == null)
-                {
-                    WriteVerbose($"Project '{ProjectName}' is not found.");
-                    WriteObject(false);
-                    return;
-                }
+                WriteVerbose($"Project '{FullName}' is not found.");
+                WriteObject(false);
+                return;
+            }
 
-                if (IsDeferred)
-                {
-                    WriteObject(await TestProjectIsDeferredAsync(project));
-                    return;
-                }
+            if (IsDeferred)
+            {
+                WriteObject(await TestProjectIsDeferredAsync(project));
+                return;
+            }
 
-                WriteObject(true);
-            });
+            WriteObject(true);
         }
 
-        private static async Task<bool> TestProjectIsDeferredAsync(EnvDTE.Project project)
+        private static async Task<bool> TestProjectIsDeferredAsync(IVsHierarchy project)
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 #if VS14
             await Task.Yield();
             return false;
 #else
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            var solution = ServiceLocator.GetService<SVsSolution, IVsSolution>();
-            ErrorHandler.ThrowOnFailure(solution.GetProjectOfUniqueName(project.UniqueName, out var hierarchy));
-
             object isDeferred;
-            if (ErrorHandler.Failed(hierarchy.GetProperty(
+            if (ErrorHandler.Failed(project.GetProperty(
                 (uint)VSConstants.VSITEMID.Root,
                 (int)__VSHPROPID9.VSHPROPID_IsDeferred,
                 out isDeferred)))

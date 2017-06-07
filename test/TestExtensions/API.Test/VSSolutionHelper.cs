@@ -1,13 +1,16 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Task = System.Threading.Tasks.Task;
 
 namespace API.Test
@@ -27,6 +30,8 @@ namespace API.Test
 
         public static void WaitForSolutionLoad()
         {
+            ThreadHelper.ThrowIfOnUIThread();
+
             using (var mre = new ManualResetEvent(false))
             {
                 KnownUIContexts.SolutionExistsAndFullyLoadedContext.WhenActivated(() => mre.Set());
@@ -408,6 +413,47 @@ namespace API.Test
                 .FirstOrDefault(project => project.Name.Equals(projectName, StringComparison.OrdinalIgnoreCase));
 
             return projectItem?.Object as EnvDTE.Project;
+        }
+
+        private static IEnumerable<IVsHierarchy> EnumerateLoadedProjects(IVsSolution vsSolution)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            IEnumHierarchies enumHierarchies;
+            var guid = Guid.Empty;
+            ErrorHandler.ThrowOnFailure(vsSolution.GetProjectEnum(
+                (uint)__VSENUMPROJFLAGS.EPF_LOADEDINSOLUTION, ref guid, out enumHierarchies));
+
+            // Loop all projects found
+            if (enumHierarchies != null)
+            {
+                // Loop projects found
+                var hierarchy = new IVsHierarchy[1];
+                uint fetched = 0;
+                while (enumHierarchies.Next(1, hierarchy, out fetched) == VSConstants.S_OK && fetched > 0)
+                {
+                    yield return hierarchy[0];
+                }
+            }
+        }
+
+        public static async Task<IVsHierarchy> FindProjectAsync(string fullName)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var vsSolution = ServiceLocator.GetService<SVsSolution, IVsSolution>();
+
+            foreach (var project in EnumerateLoadedProjects(vsSolution))
+            {
+                ErrorHandler.ThrowOnFailure(project.GetCanonicalName(
+                    VSConstants.VSITEMID_ROOT, out string projectPath));
+                if (projectPath.Equals(fullName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return project;
+                }
+            }
+
+            return null;
         }
     }
 }

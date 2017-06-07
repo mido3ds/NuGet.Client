@@ -1,15 +1,15 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Management.Automation;
-using Microsoft.VisualStudio.Shell;
 using NuGet.VisualStudio;
+using Task = System.Threading.Tasks.Task;
 
 namespace API.Test.Cmdlets
 {
     [Cmdlet(VerbsDiagnostic.Test, "InstalledPackage")]
     [OutputType(typeof(bool))]
-    public sealed class TestInstalledPackageCommand : Cmdlet
+    public sealed class TestInstalledPackageCommand : TestExtensionCmdlet
     {
         [Parameter(Mandatory = true, ValueFromPipelineByPropertyName = true, Position = 0)]
         [ValidateNotNullOrEmpty]
@@ -23,29 +23,26 @@ namespace API.Test.Cmdlets
         [ValidateNotNullOrEmpty]
         public string Version { get; set; }
 
-        protected override void ProcessRecord()
+        protected override async Task ProcessRecordAsync()
         {
-            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
+            var project = await VSSolutionHelper.GetProjectAsync(dteSolution, ProjectName);
+            if (project == null)
             {
-                var dteSolution = await VSSolutionHelper.GetDTESolutionAsync();
-                var project = await VSSolutionHelper.GetProjectAsync(dteSolution, ProjectName);
-                if (project == null)
-                {
-                    WriteVerbose($"Project '{ProjectName}' is not found.");
-                    WriteObject(false);
-                    return;
-                }
+                WriteVerbose($"Project '{ProjectName}' is not found.");
+                WriteObject(false);
+                return;
+            }
 
-                var services = ServiceLocator.GetComponent<IVsPackageInstallerServices>();
-                if (string.IsNullOrEmpty(Version))
-                {
-                    WriteObject(services.IsPackageInstalled(project, Id));
-                }
-                else
-                {
-                    WriteObject(services.IsPackageInstalledEx(project, Id, Version));
-                }
-            });
+            var services = ServiceLocator.GetComponent<IVsPackageInstallerServices>();
+            if (string.IsNullOrEmpty(Version))
+            {
+                WriteObject(services.IsPackageInstalled(project, Id));
+            }
+            else
+            {
+                WriteObject(services.IsPackageInstalledEx(project, Id, Version));
+            }
         }
     }
 }
