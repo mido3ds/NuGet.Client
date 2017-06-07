@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -147,10 +147,7 @@ namespace API.Test
         
         public static void CloseSolution()
         {
-            ThreadHelper.JoinableTaskFactory.Run(async delegate
-            {
-                await CloseSolutionAsync();
-            });
+            ThreadHelper.JoinableTaskFactory.Run(() => CloseSolutionAsync());
         }
 
         private static async Task CloseSolutionAsync()
@@ -451,6 +448,21 @@ namespace API.Test
                 {
                     return project;
                 }
+            }
+
+            return null;
+        }
+
+        public static async Task<IVsHierarchy> FindProjectByUniqueNameAsync(string uniqueName)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var vsSolution = ServiceLocator.GetService<SVsSolution, IVsSolution>();
+
+            var hr = vsSolution.GetProjectOfUniqueName(uniqueName, out var project);
+            if (ErrorHandler.Succeeded(hr))
+            {
+                return project;
             }
 
             return null;

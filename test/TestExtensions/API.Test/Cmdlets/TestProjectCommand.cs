@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Management.Automation;
@@ -18,17 +18,17 @@ namespace API.Test.Cmdlets
 
         [Parameter(Mandatory = true, Position = 0, ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
-        public string FullName { get; set; }
+        public string UniqueName { get; set; }
 
         [Parameter]
         public SwitchParameter IsDeferred { get => _isDeferred; set => _isDeferred = value; }
 
         protected override async Task ProcessRecordAsync()
         {
-            var project = await VSSolutionHelper.FindProjectAsync(FullName);
+            var project = await VSSolutionHelper.FindProjectByUniqueNameAsync(UniqueName);
             if (project == null)
             {
-                WriteVerbose($"Project '{FullName}' is not found.");
+                WriteVerbose($"Project '{UniqueName}' is not found.");
                 WriteObject(false);
                 return;
             }
